@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture - terraform-gcp-artifact-registry</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0b0c0b;color:#f5f2eb;font-family:'SF Mono','Fira Code','Cascadia Code',Consolas,monospace;line-height:1.6;padding:0}
+a{color:#c8420a;text-decoration:none}a:hover{text-decoration:underline}
+.container{max-width:1200px;margin:0 auto;padding:2rem}
+.badge-bar{background:#111;border-bottom:2px solid #c8420a;padding:0.75rem 2rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.badge-bar img{height:28px}
+.badge-bar span{font-size:0.85rem;color:#aaa}
+h1{font-size:2rem;color:#c8420a;margin:1.5rem 0 0.5rem;border-bottom:1px solid #222;padding-bottom:0.5rem}
+h2{font-size:1.4rem;color:#c8420a;margin:2rem 0 1rem;border-bottom:1px solid #1a1a1a;padding-bottom:0.4rem}
+h3{font-size:1.1rem;color:#e8e0d4;margin:1.2rem 0 0.6rem}
+p,li{font-size:0.95rem;color:#ccc}
+ul{padding-left:1.5rem;margin:0.5rem 0}
+li{margin:0.3rem 0}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin:1rem 0}
+.card{background:#141514;border:1px solid #222;border-radius:8px;padding:1.2rem;transition:border-color 0.2s}.card:hover{border-color:#c8420a}
+.card h3{margin:0 0 0.5rem;font-size:1rem;color:#c8420a}
+.card p{font-size:0.85rem;color:#aaa;margin:0}
+.arch-diagram{background:#111;border:1px solid #222;border-radius:8px;padding:2rem;margin:1.5rem 0;overflow-x:auto}
+.flow{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:0.5rem}
+.flow-box{background:#1a1b1a;border:2px solid #333;border-radius:6px;padding:0.8rem 1.2rem;text-align:center;font-size:0.85rem;min-width:130px;position:relative}
+.flow-box.accent{border-color:#c8420a;color:#c8420a;font-weight:bold}
+.flow-box.green{border-color:#34a853;color:#34a853}
+.flow-box.blue{border-color:#4285f4;color:#4285f4}
+.flow-box.purple{border-color:#9c27b0;color:#9c27b0}
+.flow-box.yellow{border-color:#fbbc04;color:#fbbc04}
+.flow-arrow{color:#555;font-size:1.5rem;display:flex;align-items:center;padding:0 0.2rem}
+.flow-col{display:flex;flex-direction:column;gap:0.5rem;align-items:center}
+table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:0.85rem}
+th{background:#1a1b1a;color:#c8420a;padding:0.6rem 0.8rem;text-align:left;border:1px solid #222}
+td{padding:0.6rem 0.8rem;border:1px solid #222;color:#ccc}
+tr:nth-child(even){background:#111}
+code{background:#1a1b1a;padding:0.15rem 0.4rem;border-radius:3px;font-size:0.85rem;color:#e8e0d4}
+pre{background:#111;border:1px solid #222;border-radius:6px;padding:1rem;overflow-x:auto;margin:1rem 0}
+pre code{background:none;padding:0}
+.checklist{list-style:none;padding-left:0}
+.checklist li{padding:0.4rem 0;padding-left:1.8rem;position:relative}
+.checklist li::before{content:'[ ]';position:absolute;left:0;color:#c8420a;font-weight:bold}
+.section{margin:2rem 0}
+.footer{border-top:1px solid #222;margin-top:3rem;padding-top:1rem;text-align:center;font-size:0.8rem;color:#555}
+.exec-summary{background:#141514;border-left:4px solid #c8420a;padding:1.2rem 1.5rem;margin:1rem 0;border-radius:0 6px 6px 0}
+.exec-summary p{color:#ccc;font-size:0.95rem}
+.tag{display:inline-block;background:#1a1b1a;border:1px solid #333;border-radius:4px;padding:0.15rem 0.5rem;font-size:0.75rem;color:#aaa;margin:0.1rem}
+</style>
+</head>
+<body>
+<div class="badge-bar">
+<img src="https://img.shields.io/badge/Google_Cloud-4285F4?style=flat&logo=googlecloud&logoColor=white" alt="GCP">
+<img src="https://img.shields.io/badge/Terraform-7B42BC?style=flat&logo=terraform&logoColor=white" alt="Terraform">
+<span>terraform-gcp-artifact-registry</span>
+<span style="margin-left:auto;color:#555">Architecture Document</span>
+</div>
+<div class="container">
+
+<h1>Artifact Registry Module</h1>
+
+<!-- Executive Summary -->
+<div class="section">
+<h2>Executive Summary</h2>
+<div class="exec-summary">
+<p>A production-ready Terraform module for provisioning and managing Google Artifact Registry repositories. Supports nine package formats (Docker, Maven, NPM, Python, APT, YUM, Go, Kubeflow, Generic) with three repository modes (Standard, Virtual, Remote). Includes automated cleanup policies, granular IAM bindings, CMEK encryption via Cloud KMS, and VPC Service Controls integration for enterprise-grade artifact management.</p>
+</div>
+</div>
+
+<!-- Overview Cards -->
+<div class="section">
+<h2>Overview</h2>
+<div class="card-grid">
+<div class="card"><h3>Provider</h3><p>google-beta >= 5.0</p></div>
+<div class="card"><h3>Terraform</h3><p>>= 1.3</p></div>
+<div class="card"><h3>Resources</h3><p>2 (Repository + IAM)</p></div>
+<div class="card"><h3>Formats</h3><p>DOCKER, MAVEN, NPM, PYTHON, APT, YUM, GO, KUBEFLOW, GENERIC</p></div>
+<div class="card"><h3>Modes</h3><p>Standard, Virtual, Remote</p></div>
+<div class="card"><h3>Encryption</h3><p>CMEK via Cloud KMS</p></div>
+</div>
+</div>
+
+<!-- Architecture Diagram -->
+<div class="section">
+<h2>Architecture Diagram</h2>
+<div class="arch-diagram">
+<div class="flow">
+<div class="flow-col">
+<div class="flow-box accent">Terraform Module</div>
+</div>
+<div class="flow-arrow">&#9654;</div>
+<div class="flow-col">
+<div class="flow-box green">Artifact Registry Repository</div>
+</div>
+<div class="flow-arrow">&#9654;</div>
+<div class="flow-col">
+<div class="flow-box yellow">Standard Mode</div>
+<div class="flow-box yellow">Virtual Mode</div>
+<div class="flow-box yellow">Remote Mode</div>
+</div>
+<div class="flow-arrow">&#9654;</div>
+<div class="flow-col">
+<div class="flow-box purple">Cleanup Policies</div>
+<div class="flow-box purple">Docker / Maven Config</div>
+<div class="flow-box purple">Upstream Policies</div>
+<div class="flow-box purple">Remote Source Config</div>
+</div>
+</div>
+<br>
+<div class="flow">
+<div class="flow-col">
+<div class="flow-box green">Repository</div>
+</div>
+<div class="flow-arrow">&#9654;</div>
+<div class="flow-col">
+<div class="flow-box blue">IAM Bindings</div>
+</div>
+<div class="flow-arrow">&#9654;</div>
+<div class="flow-col">
+<div class="flow-box">Reader</div>
+<div class="flow-box">Writer</div>
+<div class="flow-box">Admin</div>
+</div>
+<div class="flow-arrow" style="margin-left:2rem">|</div>
+<div class="flow-col">
+<div class="flow-box blue">CMEK Encryption</div>
+<div class="flow-box blue">VPC SC Policy</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Component Breakdown -->
+<div class="section">
+<h2>Component Breakdown</h2>
+<h3>google_artifact_registry_repository.this</h3>
+<p>Primary repository resource supporting all nine package formats. Dynamically configures Docker immutable tags, Maven version policies, Virtual upstream routing, and Remote proxy/cache to public registries (Docker Hub, Maven Central, NPMJS, PyPI) or custom URIs.</p>
+<h3>google_artifact_registry_repository_iam_member.bindings</h3>
+<p>Flattened IAM bindings allowing role-based access grants (reader, writer, admin) at the repository level using for_each iteration over role-member pairs.</p>
+<h3>Cleanup Policies</h3>
+<p>Dynamic cleanup policy blocks supporting DELETE and KEEP actions with conditions based on tag state, prefixes, age thresholds, and most-recent-version retention counts. Dry-run mode available for safe validation.</p>
+</div>
+
+<!-- Data Flow -->
+<div class="section">
+<h2>Data Flow</h2>
+<ul>
+<li><strong>Push:</strong> CI/CD pipelines authenticate via IAM, push artifacts (images, packages) to the Standard repository endpoint.</li>
+<li><strong>Pull (Standard):</strong> Consumers pull artifacts directly using the repository URL (<code>{location}-docker.pkg.dev/{project}/{repo}</code>).</li>
+<li><strong>Pull (Virtual):</strong> Requests route through upstream policies, aggregating artifacts from multiple backing repositories by priority.</li>
+<li><strong>Pull (Remote):</strong> Acts as a caching proxy, fetching from upstream registries (Docker Hub, Maven Central, NPMJS, PyPI, or custom URIs) and caching locally.</li>
+<li><strong>Cleanup:</strong> Automated policies delete untagged or aged artifacts and retain the most recent N versions per package.</li>
+</ul>
+</div>
+
+<!-- Security Controls -->
+<div class="section">
+<h2>Security Controls</h2>
+<table>
+<tr><th>Control</th><th>Implementation</th></tr>
+<tr><td>Encryption at Rest</td><td>CMEK via <code>kms_key_name</code> (Cloud KMS); falls back to Google-managed keys</td></tr>
+<tr><td>Access Control</td><td>IAM bindings per repository (reader / writer / admin roles)</td></tr>
+<tr><td>Network Security</td><td>VPC Service Controls via <code>vpc_sc_policy</code></td></tr>
+<tr><td>Image Integrity</td><td>Docker immutable tags prevent tag overwrites</td></tr>
+<tr><td>Maven Governance</td><td>Version policy enforcement, snapshot overwrite control</td></tr>
+<tr><td>Input Validation</td><td>Regex-based validation on project_id, repository_id, format, and mode</td></tr>
+</table>
+</div>
+
+<!-- Industry Adaptation -->
+<div class="section">
+<h2>Industry Adaptation</h2>
+<ul>
+<li><strong>Financial Services:</strong> CMEK encryption + VPC SC for regulatory compliance, immutable Docker tags for audit trails.</li>
+<li><strong>Healthcare:</strong> Private repository with strict IAM and cleanup policies for PHI-adjacent container images.</li>
+<li><strong>E-Commerce:</strong> Virtual repositories aggregating internal and third-party packages; Remote mode caching public registries to reduce build latency.</li>
+<li><strong>Enterprise DevOps:</strong> Multi-format repositories (Docker + Maven + NPM) with automated lifecycle management.</li>
+</ul>
+</div>
+
+<!-- Production Readiness Checklist -->
+<div class="section">
+<h2>Production Readiness Checklist</h2>
+<ul class="checklist">
+<li>Enable CMEK encryption with a dedicated Cloud KMS key</li>
+<li>Configure VPC Service Controls perimeter</li>
+<li>Set cleanup policies (delete untagged after 30d, keep latest 5 versions)</li>
+<li>Enable Docker immutable tags for container repositories</li>
+<li>Assign least-privilege IAM bindings (avoid allUsers / allAuthenticatedUsers)</li>
+<li>Test cleanup policies with <code>cleanup_policy_dry_run = true</code> before enforcement</li>
+<li>Apply consistent labels for cost tracking and resource organization</li>
+<li>Document repository naming conventions and ownership</li>
+</ul>
+</div>
+
+<!-- Config Reference -->
+<div class="section">
+<h2>Configuration Reference</h2>
+<h3>Required Variables</h3>
+<table>
+<tr><th>Name</th><th>Type</th><th>Description</th></tr>
+<tr><td><code>project_id</code></td><td>string</td><td>GCP project ID</td></tr>
+<tr><td><code>repository_id</code></td><td>string</td><td>Repository ID (lowercase, alphanumeric + hyphens, max 63 chars)</td></tr>
+</table>
+<h3>Key Optional Variables</h3>
+<table>
+<tr><th>Name</th><th>Type</th><th>Default</th><th>Description</th></tr>
+<tr><td><code>location</code></td><td>string</td><td>us-central1</td><td>Repository region</td></tr>
+<tr><td><code>format</code></td><td>string</td><td>DOCKER</td><td>Package format</td></tr>
+<tr><td><code>mode</code></td><td>string</td><td>STANDARD_REPOSITORY</td><td>Repository mode</td></tr>
+<tr><td><code>kms_key_name</code></td><td>string</td><td>null</td><td>CMEK key resource name</td></tr>
+<tr><td><code>cleanup_policies</code></td><td>list(object)</td><td>[]</td><td>Cleanup policy definitions</td></tr>
+<tr><td><code>iam_bindings</code></td><td>map(list(string))</td><td>{}</td><td>Role-to-members mapping</td></tr>
+</table>
+<h3>Outputs</h3>
+<table>
+<tr><th>Name</th><th>Description</th></tr>
+<tr><td><code>repository_id</code></td><td>The repository ID</td></tr>
+<tr><td><code>repository_name</code></td><td>Full resource name</td></tr>
+<tr><td><code>repository_url</code></td><td>Docker push/pull base URL</td></tr>
+<tr><td><code>format</code></td><td>Repository format</td></tr>
+<tr><td><code>mode</code></td><td>Repository mode</td></tr>
+<tr><td><code>effective_labels</code></td><td>Effective labels on the repository</td></tr>
+</table>
+</div>
+
+<!-- Deployment -->
+<div class="section">
+<h2>Deployment</h2>
+<pre><code>module "artifact_registry" {
+  source = "github.com/kogunlowo123/terraform-gcp-artifact-registry"
+
+  project_id    = "my-project"
+  location      = "us-central1"
+  repository_id = "my-docker-repo"
+  format        = "DOCKER"
+  kms_key_name  = "projects/my-project/locations/us-central1/keyRings/my-ring/cryptoKeys/my-key"
+
+  docker_config = { immutable_tags = true }
+
+  cleanup_policies = [
+    {
+      id     = "delete-untagged"
+      action = "DELETE"
+      condition = { tag_state = "UNTAGGED", older_than = "2592000s" }
+    },
+    {
+      id     = "keep-latest"
+      action = "KEEP"
+      most_recent_versions = { keep_count = 5 }
+    }
+  ]
+
+  iam_bindings = {
+    "roles/artifactregistry.reader" = ["serviceAccount:ci@my-project.iam.gserviceaccount.com"]
+    "roles/artifactregistry.writer" = ["serviceAccount:cd@my-project.iam.gserviceaccount.com"]
+  }
+
+  labels = { team = "platform", env = "production" }
+}</code></pre>
+</div>
+
+<!-- Links -->
+<div class="section">
+<h2>Links</h2>
+<ul>
+<li><a href="https://cloud.google.com/artifact-registry/docs">Google Artifact Registry Documentation</a></li>
+<li><a href="https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/artifact_registry_repository">Terraform google_artifact_registry_repository</a></li>
+<li><a href="https://cloud.google.com/artifact-registry/docs/cmek">CMEK Encryption for Artifact Registry</a></li>
+<li><a href="../README.md">Module README</a></li>
+</ul>
+</div>
+
+<div class="footer">
+<p>terraform-gcp-artifact-registry &middot; Architecture Document &middot; Generated 2026-03-15</p>
+<p style="color:#333;margin-top:0.3rem">Built for Google Cloud Platform</p>
+</div>
+</div>
+</body>
+</html>
