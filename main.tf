@@ -8,7 +8,7 @@ resource "google_artifact_registry_repository" "this" {
   format        = var.format
   mode          = var.mode
   kms_key_name  = var.kms_key_name
-  labels        = local.merged_labels
+  labels        = var.labels
 
   cleanup_policy_dry_run = var.cleanup_policy_dry_run
 
@@ -41,14 +41,14 @@ resource "google_artifact_registry_repository" "this" {
   }
 
   dynamic "docker_config" {
-    for_each = local.is_docker && var.docker_config != null ? [var.docker_config] : []
+    for_each = var.format == "DOCKER" && var.docker_config != null ? [var.docker_config] : []
     content {
       immutable_tags = docker_config.value.immutable_tags
     }
   }
 
   dynamic "maven_config" {
-    for_each = local.is_maven && var.maven_config != null ? [var.maven_config] : []
+    for_each = var.format == "MAVEN" && var.maven_config != null ? [var.maven_config] : []
     content {
       allow_snapshot_overwrites = maven_config.value.allow_snapshot_overwrites
       version_policy            = maven_config.value.version_policy
@@ -56,7 +56,7 @@ resource "google_artifact_registry_repository" "this" {
   }
 
   dynamic "virtual_repository_config" {
-    for_each = local.is_virtual ? [1] : []
+    for_each = var.mode == "VIRTUAL_REPOSITORY" ? [1] : []
     content {
       dynamic "upstream_policies" {
         for_each = var.virtual_repository_config
@@ -70,20 +70,20 @@ resource "google_artifact_registry_repository" "this" {
   }
 
   dynamic "remote_repository_config" {
-    for_each = local.is_remote && var.remote_repository_config != null ? [var.remote_repository_config] : []
+    for_each = var.mode == "REMOTE_REPOSITORY" && var.remote_repository_config != null ? [var.remote_repository_config] : []
     content {
       description                 = remote_repository_config.value.description
       disable_upstream_validation = remote_repository_config.value.disable_upstream_validation
 
       dynamic "docker_repository" {
-        for_each = local.is_docker && remote_repository_config.value.upstream_type == "DOCKER_HUB" ? [1] : []
+        for_each = var.format == "DOCKER" && remote_repository_config.value.upstream_type == "DOCKER_HUB" ? [1] : []
         content {
           public_repository = "DOCKER_HUB"
         }
       }
 
       dynamic "docker_repository" {
-        for_each = local.is_docker && remote_repository_config.value.upstream_type == "CUSTOM" ? [1] : []
+        for_each = var.format == "DOCKER" && remote_repository_config.value.upstream_type == "CUSTOM" ? [1] : []
         content {
           custom_repository {
             uri = remote_repository_config.value.custom_uri
@@ -92,7 +92,7 @@ resource "google_artifact_registry_repository" "this" {
       }
 
       dynamic "maven_repository" {
-        for_each = local.is_maven && remote_repository_config.value.upstream_type == "MAVEN_CENTRAL" ? [1] : []
+        for_each = var.format == "MAVEN" && remote_repository_config.value.upstream_type == "MAVEN_CENTRAL" ? [1] : []
         content {
           public_repository = "MAVEN_CENTRAL"
         }
@@ -117,8 +117,14 @@ resource "google_artifact_registry_repository" "this" {
 
 resource "google_artifact_registry_repository_iam_member" "bindings" {
   for_each = {
-    for binding in local.iam_bindings_flat :
-    "${binding.role}-${binding.member}" => binding
+    for binding in flatten([
+      for role, members in var.iam_bindings : [
+        for member in members : {
+          role   = role
+          member = member
+        }
+      ]
+    ]) : "${binding.role}-${binding.member}" => binding
   }
 
   project    = var.project_id

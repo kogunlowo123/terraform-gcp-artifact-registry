@@ -20,7 +20,7 @@ variable "location" {
 }
 
 variable "repository_id" {
-  description = "The repository ID. Must be unique within the project and location."
+  description = "The repository ID, must be unique within the project and location."
   type        = string
 
   validation {
@@ -36,7 +36,7 @@ variable "description" {
 }
 
 variable "format" {
-  description = "The format of packages stored in the repository. Supported values: DOCKER, MAVEN, NPM, PYTHON, APT, YUM, KUBEFLOW, GO, GENERIC."
+  description = "The format of packages stored in the repository (DOCKER, MAVEN, NPM, PYTHON, APT, YUM, KUBEFLOW, GO, GENERIC)."
   type        = string
   default     = "DOCKER"
 
@@ -47,7 +47,7 @@ variable "format" {
 }
 
 variable "mode" {
-  description = "The mode of the repository. Supported values: STANDARD_REPOSITORY, VIRTUAL_REPOSITORY, REMOTE_REPOSITORY."
+  description = "The mode of the repository (STANDARD_REPOSITORY, VIRTUAL_REPOSITORY, REMOTE_REPOSITORY)."
   type        = string
   default     = "STANDARD_REPOSITORY"
 
@@ -58,7 +58,7 @@ variable "mode" {
 }
 
 variable "kms_key_name" {
-  description = "The Cloud KMS resource name of the customer-managed encryption key for repository encryption. If not set, Google-managed keys are used."
+  description = "Cloud KMS key name for customer-managed encryption, or null for Google-managed keys."
   type        = string
   default     = null
 }
@@ -76,23 +76,17 @@ variable "cleanup_policy_dry_run" {
 }
 
 variable "cleanup_policies" {
-  description = <<-EOT
-    List of cleanup policies for the repository. Each policy is a map with:
-    - id: Unique identifier for the policy.
-    - action: DELETE or KEEP.
-    - condition: (Optional) Condition block with tag_state, tag_prefixes, version_name_prefixes, package_name_prefixes, older_than, newer_than.
-    - most_recent_versions: (Optional) Block with package_name_prefixes and keep_count.
-  EOT
+  description = "List of cleanup policies for the repository."
   type = list(object({
     id     = string
     action = optional(string, "DELETE")
     condition = optional(object({
-      tag_state            = optional(string)
-      tag_prefixes         = optional(list(string))
+      tag_state             = optional(string)
+      tag_prefixes          = optional(list(string))
       version_name_prefixes = optional(list(string))
       package_name_prefixes = optional(list(string))
-      older_than           = optional(string)
-      newer_than           = optional(string)
+      older_than            = optional(string)
+      newer_than            = optional(string)
     }))
     most_recent_versions = optional(object({
       package_name_prefixes = optional(list(string))
@@ -103,7 +97,7 @@ variable "cleanup_policies" {
 }
 
 variable "docker_config" {
-  description = "Docker-specific repository configuration. immutable_tags enables tag immutability."
+  description = "Docker-specific repository configuration with immutable_tags option."
   type = object({
     immutable_tags = optional(bool, false)
   })
@@ -120,12 +114,7 @@ variable "maven_config" {
 }
 
 variable "virtual_repository_config" {
-  description = <<-EOT
-    Configuration for virtual repositories. List of upstream policies:
-    - id: Unique identifier for the upstream policy.
-    - repository: Full resource name of the upstream repository.
-    - priority: Priority of the upstream repository (lower = higher priority).
-  EOT
+  description = "List of upstream policies for virtual repositories."
   type = list(object({
     id         = string
     repository = string
@@ -135,33 +124,24 @@ variable "virtual_repository_config" {
 }
 
 variable "remote_repository_config" {
-  description = <<-EOT
-    Configuration for remote repositories:
-    - description: Description of the remote source.
-    - upstream_type: Type of upstream. One of: DOCKER_HUB, MAVEN_CENTRAL, NPMJS, PYPI, CUSTOM.
-    - custom_uri: URI for CUSTOM upstream_type.
-    - disable_upstream_validation: Whether to disable upstream validation.
-  EOT
+  description = "Configuration for remote repositories including upstream type and URI."
   type = object({
-    description                = optional(string, "")
-    upstream_type              = optional(string)
-    custom_uri                 = optional(string)
+    description                 = optional(string, "")
+    upstream_type               = optional(string)
+    custom_uri                  = optional(string)
     disable_upstream_validation = optional(bool, false)
   })
   default = null
 }
 
 variable "iam_bindings" {
-  description = <<-EOT
-    IAM bindings for the repository. Map of role => list of members.
-    Example: { "roles/artifactregistry.reader" = ["user:dev@example.com"] }
-  EOT
-  type    = map(list(string))
-  default = {}
+  description = "IAM bindings for the repository as a map of role to list of members."
+  type        = map(list(string))
+  default     = {}
 }
 
 variable "vpc_sc_policy" {
-  description = "VPC Service Controls access policy name for the repository. Set to restrict access."
+  description = "VPC Service Controls access policy name for the repository."
   type        = string
   default     = null
 }

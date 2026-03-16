@@ -9,7 +9,7 @@ output "repository_name" {
 }
 
 output "repository_url" {
-  description = "The URI of the repository. For Docker, this is the base URL for docker push/pull."
+  description = "The URI of the repository for docker push/pull."
   value       = "${var.location}-docker.pkg.dev/${var.project_id}/${var.repository_id}"
 }
 
